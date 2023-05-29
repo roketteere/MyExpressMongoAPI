@@ -1,0 +1,25 @@
+{
+  "name": "myexpressmongoapi",
+  "version": "1.0.0",
+  "description": "Demo App Demonstrating Full API Using MongoDB Nodejs & Express",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roketteere/MyExpressMongoAPI.git"
+  },
+  "keywords": [
+    "mongo",
+    "express",
+    "node",
+    "api"
+  ],
+  "author": "Joel Perez @Roketteere",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/roketteere/MyExpressMongoAPI/issues"
+  },
+  "homepage": "https://github.com/roketteere/MyExpressMongoAPI#readme"
+}
