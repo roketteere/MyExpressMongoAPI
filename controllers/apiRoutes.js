@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { User, Thought, Reaction } = require("../models");
+const { User, Thought } = require("../models");
 
 router.get("/users", async (req, res) => {
   try {
@@ -12,10 +12,12 @@ router.get("/users", async (req, res) => {
 
 router.get("/users/:_id", async (req, res) => {
   try {
-    const users = await User.findOne({
+    const user = await User.findOne({
       _id: req.params._id,
-    });
-    res.status(200).json({ umm: "UMM", user: users });
+    })
+      .populate("thoughts")
+      .populate("friends");
+    res.status(200).json(user);
   } catch (err) {
     res.status(500).json(err);
   }
@@ -27,7 +29,7 @@ router.post("/users", async (req, res) => {
       username: req.body.username,
       email: req.body.email,
     });
-    user.save();
+    await user.save();
     res.status(200).json(user);
   } catch (err) {
     console.log(err);
@@ -37,8 +39,7 @@ router.post("/users", async (req, res) => {
 
 router.put("/users/:_id", async (req, res) => {
   try {
-    const user = await User.updateOne({
-      _id: req.params.id,
+    const user = await User.findByIdAndUpdate(req.params._id, {
       username: req.body.username,
       email: req.body.email,
     });
@@ -48,12 +49,10 @@ router.put("/users/:_id", async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-
     res.status(500).json(err);
   }
 });
 
-// Create a DELETE route to delete an item
 router.delete("/users/:_id", async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params._id);
@@ -65,33 +64,40 @@ router.delete("/users/:_id", async (req, res) => {
 });
 
 router.get("/thoughts", async (req, res) => {
-  const thoughts = await Thought.find({});
-  res.status(200).json(thoughts);
-});
-
-// Create a GET route to get all items
-router.get("/thoughts/:_id", async (req, res) => {
   try {
-    const thoughts = await Thought.findOne(req.params.id);
+    const thoughts = await Thought.find({});
     res.status(200).json(thoughts);
   } catch (err) {
     res.status(500).json(err);
   }
 });
 
-// Create a POST route to create a new item
-router.post("/thoughts", (req, res) => {
+router.get("/thoughts/:_id", async (req, res) => {
   try {
-    const thoughts = new Thought({
+    const thought = await Thought.findOne({ _id: req.params._id });
+    res.status(200).json(thought);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+router.post("/thoughts", async (req, res) => {
+  try {
+    const thought = new Thought({
       thoughtText: req.body.thoughtText,
       username: req.body.username,
     });
-    thoughts.save();
-    res.status(200).json(thoughts);
+    await thought.save();
+    // Push the created thought's _id to the associated user's thoughts array field
+    const user = await User.findOneAndUpdate(
+      { username: req.body.username },
+      { $push: { thoughts: thought._id } },
+      { new: true }
+    );
+    res.status(200).json(thought);
   } catch (err) {
     res.status(500).json(err);
   }
 });
 
-// Export the router
 module.exports = router;

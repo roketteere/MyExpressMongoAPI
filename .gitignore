@@ -5,6 +5,8 @@ instructions.md
 node_modules
 .pnp
 .pnp.js
+checklist.md
+todolist.html
 
 # testing
 /coverage
