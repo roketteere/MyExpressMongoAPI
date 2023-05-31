@@ -32,8 +32,9 @@ This is a social media API that allows users to create, update, and delete users
     ```
 5. Use Insomnia Core to test the routes
 
-## Usage
-* [Video Walkthrough](...)
+## Demo - Video
+
+https://github.com/roketteere/MyExpressMongoAPI/assets/1593262/3d7ec53c-b165-472f-9b48-3ffd9c25e90e
 
 ## License
 This project is licensed under the MIT license.
