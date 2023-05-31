@@ -1,9 +1,13 @@
 const router = require("express").Router();
-const { User, Thought } = require("../models");
+const { User, Thought, Reaction } = require("../models");
 
 router.get("/users", async (req, res) => {
   try {
-    const users = await User.find({});
+    const users = await User.find({})
+      .populate("thoughts", {
+        reactions: true,
+      })
+      .populate("friends");
     res.status(200).json(users);
   } catch (err) {
     res.status(500).json(err);
@@ -55,7 +59,7 @@ router.put("/users/:_id", async (req, res) => {
 
 router.delete("/users/:_id", async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params._id);
+    const user = await User.findByIdAndDelete(req.params._id, { new: true });
     res.status(200).json({ user: user, message: "User deleted" });
   } catch (err) {
     console.log(err);
@@ -63,9 +67,54 @@ router.delete("/users/:_id", async (req, res) => {
   }
 });
 
+router.post("/users/:userId/friends/:friendId", async (req, res) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { _id: req.params.userId },
+      {
+        $push: { friends: req.params.friendId },
+      },
+      { new: true }
+    ).populate("friends");
+    res.status(200).json({
+      userId: req.params.userId,
+      friendId: req.params.friendId,
+      user: user,
+      message: "Friend added",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json(err);
+  }
+});
+
+router.delete("/users/:userId/friends/:friendId", async (req, res) => {
+  try {
+    const { userId, friendId } = req.params;
+
+    const user = await User.findByIdAndUpdate(
+      { _id: userId },
+      { $pull: { friends: friendId } },
+      { new: true }
+    )
+      .populate("friends")
+      .populate("thoughts");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(200).json({
+      userId: userId,
+      friendId: friendId,
+      message: "Friend deleted",
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
 router.get("/thoughts", async (req, res) => {
   try {
-    const thoughts = await Thought.find({});
+    const thoughts = await Thought.find({}).populate("reactions");
     res.status(200).json(thoughts);
   } catch (err) {
     res.status(500).json(err);
@@ -88,7 +137,6 @@ router.post("/thoughts", async (req, res) => {
       username: req.body.username,
     });
     await thought.save();
-    // Push the created thought's _id to the associated user's thoughts array field
     const user = await User.findOneAndUpdate(
       { username: req.body.username },
       { $push: { thoughts: thought._id } },
@@ -99,5 +147,76 @@ router.post("/thoughts", async (req, res) => {
     res.status(500).json(err);
   }
 });
+
+router.delete("/thoughts/:thoughtId", async (req, res) => {
+  try {
+    const { thoughtId } = req.params;
+
+    const thought = await Thought.deleteOne({ _id: thoughtId }, { new: true });
+    if (!thought) {
+      return res.status(404).json({ error: "Thought not found" });
+    }
+    res.status(200).json({
+      thought: thoughtId,
+      message: "Thought deleted",
+    });
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json(err);
+  }
+});
+
+router.get("/reactions", async (req, res) => { 
+  try {
+    const reactions = await Reaction.find({});
+    res.status(200).json(reactions);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+router.post("/thoughts/:thoughtId/reactions", async (req, res) => {
+  try {
+    const reaction = new Reaction(req.body);
+    const thought = await Thought.findByIdAndUpdate(
+      { _id: req.params.thoughtId },
+      {
+        $push: {
+          reactions: reaction,
+        },
+      },
+      { new: true }
+    ).populate("reactions");
+    await thought.save();
+    res.status(200).json(thought);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+router.delete(
+  "/thoughts/:thoughtId/reactions/:reactionId",
+  async (req, res) => {
+    try {
+      const { thoughtId, reactionId } = req.params;
+
+      const thought = await Thought.findOneAndUpdate(
+        { _id: thoughtId },
+        { $pull: { reactions: { reactionId: reactionId } } }
+      ).populate("reactions");
+      if (!thought) {
+        return res.status(404).json({ error: "Thought not found" });
+      }
+      await thought.save();
+      res.status(200).json({
+        reactions: reactionId,
+        message: "Reaction deleted",
+      });
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+);
 
 module.exports = router;
